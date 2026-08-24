@@ -1,5 +1,6 @@
 import torch
 
+from fnf_ai.audio import mel_to_waveform
 from fnf_ai.losses import weighted_cvae_loss
 from fnf_ai.model import StemCVAE
 
@@ -21,3 +22,19 @@ def test_sampling_is_seeded():
     a = model.sample(tags, seed=42)
     b = model.sample(tags, seed=42)
     assert torch.allclose(a, b)
+
+
+def test_mel_to_waveform_handles_padded_model_frames():
+    # The model can emit a padded spectrogram width that is larger than the
+    # centered STFT width implied by the requested waveform length.
+    scaled_mel = torch.zeros(16, 32)
+    waveform = mel_to_waveform(
+        scaled_mel,
+        sample_rate=8000,
+        n_fft=64,
+        hop_length=32,
+        n_mels=16,
+        length=800,
+    )
+    assert waveform.shape[-1] == 800
+    assert torch.isfinite(waveform).all()
