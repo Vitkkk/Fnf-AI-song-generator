@@ -1,0 +1,22 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+.DS_Store
+.pytest_cache/
+
+# Training data / outputs
+/data/
+/dataset/
+/checkpoints/
+/generated/
+/runs/
+*.pt
+*.pth
+*.ckpt
+*.wav
+*.mp3
+*.ogg
+*.ogx
+*.zip
