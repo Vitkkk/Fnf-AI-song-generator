@@ -111,14 +111,36 @@ def mel_to_waveform(
     n_mels: int,
     length: int,
 ) -> torch.Tensor:
+    """Invert a generated mel spectrogram robustly enough for v0.1 listening tests.
+
+    Torchaudio's InverseMelScale relies on a least-squares solve that can fail
+    when the mel filterbank is rank-deficient. Generated spectrograms also use
+    a padded frame count, while Griffin-Lim with a fixed waveform length expects
+    the exact centered-STFT frame count. A Moore-Penrose pseudo-inverse plus an
+    explicit frame crop avoids both failure modes.
+    """
     power_mel = scaled_mel_to_power(scaled_mel.detach().cpu())
-    inv_mel = torchaudio.transforms.InverseMelScale(
-        n_stft=n_fft // 2 + 1,
+    fb = torchaudio.functional.melscale_fbanks(
+        n_freqs=n_fft // 2 + 1,
+        f_min=0.0,
+        f_max=sample_rate / 2,
         n_mels=n_mels,
         sample_rate=sample_rate,
-    )
-    linear_power = inv_mel(power_mel)
-    magnitude = torch.sqrt(linear_power.clamp_min(1e-10))
+        norm=None,
+        mel_scale="htk",
+    ).transpose(0, 1)
+    inverse_fb = torch.linalg.pinv(fb)
+    linear_power = torch.matmul(inverse_fb, power_mel).clamp_min(1e-10)
+
+    expected_frames = 1 + length // hop_length
+    if linear_power.shape[-1] < expected_frames:
+        linear_power = torch.nn.functional.pad(
+            linear_power, (0, expected_frames - linear_power.shape[-1]), value=1e-10
+        )
+    elif linear_power.shape[-1] > expected_frames:
+        linear_power = linear_power[..., :expected_frames]
+
+    magnitude = torch.sqrt(linear_power)
     griffin_lim = torchaudio.transforms.GriffinLim(
         n_fft=n_fft,
         win_length=n_fft,
