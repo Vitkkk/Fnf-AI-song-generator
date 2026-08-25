@@ -1,0 +1,23 @@
+name: Fetch EnCodec checkpoint
+
+on:
+  push:
+    paths:
+      - '.github/workflows/fetch_encodec_checkpoint.yml'
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download official Meta EnCodec 24 kHz checkpoint
+        run: |
+          mkdir -p out
+          curl -L --fail --retry 3 \
+            -o out/encodec_24khz-d7cc33bc.th \
+            https://dl.fbaipublicfiles.com/encodec/v0/encodec_24khz-d7cc33bc.th
+          sha256sum out/encodec_24khz-d7cc33bc.th > out/SHA256SUMS.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: encodec-24khz-checkpoint
+          path: out/
+          retention-days: 1
