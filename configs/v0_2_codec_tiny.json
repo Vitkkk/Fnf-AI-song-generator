@@ -1,0 +1,17 @@
+{
+  "sample_rate": 8000,
+  "segment_seconds": 1.0,
+  "base_channels": 16,
+  "latent_dim": 32,
+  "codebook_size": 64,
+  "commitment": 0.25,
+  "batch_size": 9,
+  "epochs": 20,
+  "learning_rate": 0.0003,
+  "weight_decay": 0.00001,
+  "waveform_weight": 1.0,
+  "stft_weight": 0.8,
+  "vq_weight": 0.25,
+  "checkpoint_every": 5,
+  "seed": 1337
+}
